@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolVault · 工具金库</title>
+  <meta name="description" content="我的付费工具收藏，一键直达，账号管理。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --danger: #ff3b30;
+      --danger-soft: rgba(255,59,48,0.08);
+      --success: #30d158;
+      --warning: #ff9f0a;
+      --radius-card: 18px;
+      --radius-btn: 980px;
+      --shadow-card: 0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-modal: 0 24px 80px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
+      --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── AUTH LOCK ── */
+    #authOverlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(245,245,247,0.6);
+      backdrop-filter: blur(40px) saturate(150%);
+      -webkit-backdrop-filter: blur(40px) saturate(150%);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+    #authOverlay.hidden { opacity: 0; visibility: hidden; }
+    .auth-card {
+      background: white; padding: 40px; border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+      width: 100%; max-width: 320px; text-align: center;
+    }
+    .auth-logo { width: 48px; height: 48px; background: #000; border-radius: 12px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: white; }
+    .auth-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .auth-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+    .pin-input {
+      width: 100%; height: 50px; text-align: center; font-size: 24px;
+      letter-spacing: 12px; border-radius: 14px; border: 1px solid var(--border);
+      background: var(--bg); outline: none; margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    .pin-input:focus { border-color: var(--accent); }
+    .auth-btn { width: 100%; height: 46px; background: var(--accent); color: white; border: none; border-radius: var(--radius-btn); font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .auth-btn:hover { background: var(--accent-hover); }
+    .auth-err { font-size: 12px; color: var(--danger); margin-top: 12px; height: 16px; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(245,245,247,0.82);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-size: 15px; font-weight: 600; letter-spacing: -0.3px;
+      color: var(--text-primary); display: flex; align-items: center; gap: 8px;
+    }
+    .nav-brand .logo-icon {
+      width: 26px; height: 26px; background: var(--text-primary);
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-brand .logo-icon svg { fill: white; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-count { font-size: 13px; color: var(--text-tertiary); }
+    .btn-add {
+      height: 32px; padding: 0 14px;
+      background: var(--accent); color: white;
+      border: none; border-radius: var(--radius-btn);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .btn-add:hover { background: var(--accent-hover); }
+    .btn-add:active { transform: scale(0.96); }
+
+    /* ── HERO ── */
+    .hero { text-align: center; padding: 72px 24px 48px; }
+    .hero-eyebrow {
+      font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+    }
+    .hero-title {
+      font-size: clamp(36px,5vw,56px); font-weight: 700;
+      letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+    }
+    .hero-sub {
+      font-size: 17px; color: var(--text-secondary);
+      max-width: 480px; margin: 0 auto 36px; line-height: 1.6;
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      max-width: 960px; margin: 0 auto 48px; padding: 0 24px;
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap svg {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%); color: var(--text-tertiary);
+    }
+    .search-input {
+      width: 100%; height: 40px; padding: 0 16px 0 40px;
+      border: 1px solid var(--border); border-radius: var(--radius-btn);
+      background: var(--surface); font-family: inherit; font-size: 14px;
+      color: var(--text-primary); outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-input::placeholder { color: var(--text-tertiary); }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.15); }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-btn {
+      height: 40px; padding: 0 16px; border-radius: var(--radius-btn);
+      border: 1px solid var(--border); background: var(--surface);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+      transition: all var(--transition); white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+    .filter-btn.active { background: var(--text-primary); border-color: var(--text-primary); color: white; }
+
+    /* ── GRID ── */
+    .grid {
+      max-width: 960px; margin: 0 auto; padding: 0 24px 80px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface); border-radius: var(--radius-card);
+      border: 1px solid var(--border); box-shadow: var(--shadow-card);
+      padding: 24px; position: relative; overflow: hidden;
+      transition: box-shadow var(--transition), transform var(--transition);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .card:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+    /* 悬浮管理按钮 */
+    .card-actions {
+      position: absolute; top: 16px; right: 16px;
+      display: flex; gap: 4px;
+      opacity: 0; transform: translateY(-4px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .card:hover .card-actions { opacity: 1; transform: translateY(0); }
+    .card-action-btn {
+      width: 28px; height: 28px; border-radius: 8px; border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; transition: background var(--transition);
+    }
+    .card-action-btn.edit { background: rgba(0,0,0,0.06); color: var(--text-secondary); }
+    .card-action-btn.edit:hover { background: rgba(0,113,227,0.1); color: var(--accent); }
+    .card-action-btn.del { background: rgba(0,0,0,0.06); color: var(--text-secondary); }
+    .card-action-btn.del:hover { background: var(--danger-soft); color: var(--danger); }
+
+    .card-head { display: flex; align-items: flex-start; gap: 14px; }
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 11px;
+      border: 1px solid var(--border); object-fit: contain;
+      background: #fff; flex-shrink: 0;
+    }
+    .card-icon-fallback {
+      width: 44px; height: 44px; border-radius: 11px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg,#e8e8ed,#d1d1d6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .card-meta { flex: 1; min-width: 0; padding-right: 32px; }
+    .card-name {
+      font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .card-desc { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+    .status-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .status-active { background: var(--success); box-shadow: 0 0 0 2px rgba(48,209,88,0.2); }
+    .status-warning { background: var(--warning); box-shadow: 0 0 0 2px rgba(255,159,10,0.2); }
+    .status-expired { background: var(--danger); box-shadow: 0 0 0 2px rgba(255,59,48,0.2); }
+
+    /* Tags */
+    .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      display: inline-flex; align-items: center; height: 22px;
+      padding: 0 8px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    }
+    .tag-ai      { background: rgba(0,113,227,0.08); color: #0071e3; }
+    .tag-video   { background: rgba(255,159,10,0.1);  color: #cc7a00; }
+    .tag-design  { background: rgba(48,209,88,0.1);   color: #1a9940; }
+    .tag-search  { background: rgba(130,80,255,0.1);  color: #7340e0; }
+    .tag-image   { background: rgba(255,59,48,0.1);   color: #cc2e26; }
+    .tag-other   { background: rgba(0,0,0,0.05);      color: #6e6e73; }
+
+    /* Credentials */
+    .creds { display: flex; flex-direction: column; gap: 8px; }
+    .cred-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; background: var(--bg);
+      border-radius: 10px; border: 1px solid transparent;
+      transition: border-color var(--transition);
+    }
+    .cred-row:hover { border-color: var(--border); }
+    .cred-label {
+      font-size: 11px; font-weight: 500; color: var(--text-tertiary);
+      width: 36px; flex-shrink: 0; letter-spacing: 0.03em;
+    }
+    .cred-value {
+      flex: 1; font-size: 13px; color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.01em;
+    }
+    .cred-value.masked { color: var(--text-tertiary); letter-spacing: 0.2em; }
+    .cred-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .icon-btn {
+      width: 28px; height: 28px; border-radius: 7px; border: none;
+      background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-tertiary); transition: background var(--transition), color var(--transition);
+    }
+    .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
+    .icon-btn.copied { color: var(--success); }
+    .expiry-note { font-size: 11px; color: var(--text-tertiary); }
+    .expiry-note.soon { color: var(--warning); }
+
+    /* Open btn */
+    .card-footer { margin-top: auto; }
+    .open-btn {
+      width: 100%; height: 38px; border-radius: var(--radius-btn); border: none;
+      background: var(--accent); color: white;
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 6px; text-decoration: none;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .open-btn:hover { background: var(--accent-hover); }
+    .open-btn:active { transform: scale(0.98); }
+    .open-btn.no-url { background: rgba(0,0,0,0.05); color: var(--text-tertiary); pointer-events: none; }
+
+    /* ── EMPTY ── */
+    .empty { text-align: center; padding: 64px 24px; grid-column: 1/-1; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty h3 { font-size: 17px; color: var(--text-secondary); margin-bottom: 8px; }
+    .empty p { font-size: 14px; color: var(--text-tertiary); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(29,29,31,0.92); color: white;
+      padding: 10px 20px; border-radius: 980px;
+      font-size: 13px; font-weight: 500;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 9999; backdrop-filter: blur(20px); white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ══════════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-modal);
+      width: 100%; max-width: 560px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+      overflow: hidden;
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+    /* Modal header */
+    .modal-header {
+      padding: 24px 24px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(0,0,0,0.06); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      transition: background var(--transition); font-size: 16px;
+    }
+    .modal-close:hover { background: rgba(0,0,0,0.10); color: var(--text-primary); }
+
+    /* Modal body — scrollable */
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Favicon preview row */
+    .favicon-preview-row {
+      display: flex; gap: 14px; align-items: center;
+    }
+    .favicon-preview {
+      width: 56px; height: 56px; border-radius: 14px;
+      border: 1px solid var(--border); object-fit: contain;
+      background: #fff; flex-shrink: 0;
+    }
+    .favicon-preview-fallback {
+      width: 56px; height: 56px; border-radius: 14px;
+      border: 2px dashed var(--border); background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--text-tertiary); flex-shrink: 0;
+    }
+    .favicon-hint { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+    .favicon-hint strong { color: var(--text-secondary); }
+
+    /* Form fields */
+    .form-row { display: flex; flex-direction: column; gap: 6px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-label {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .form-input, .form-select, .form-textarea {
+      height: 42px; padding: 0 14px;
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg); font-family: inherit; font-size: 14px;
+      color: var(--text-primary); outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-textarea { height: auto; padding: 12px 14px; resize: vertical; min-height: 60px; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.15);
+      background: var(--surface);
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-tertiary); }
+    .form-select { -webkit-appearance: none; cursor: pointer; }
+
+    /* Tag selector */
+    .tag-selector { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag-chip {
+      height: 30px; padding: 0 12px; border-radius: var(--radius-btn);
+      border: 1px solid var(--border); background: var(--bg);
+      font-family: inherit; font-size: 12px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+      transition: all var(--transition); user-select: none;
+    }
+    .tag-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .tag-chip.selected { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* Password field */
+    .pwd-wrap { position: relative; }
+    .pwd-wrap .form-input { padding-right: 44px; }
+    .pwd-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; border-radius: 7px; border: none;
+      background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-tertiary); transition: color var(--transition);
+    }
+    .pwd-toggle:hover { color: var(--text-primary); }
+
+    /* Url status */
+    .url-status {
+      font-size: 11px; margin-top: 4px; min-height: 16px;
+      transition: color 0.2s;
+    }
+    .url-status.ok { color: var(--success); }
+    .url-status.loading { color: var(--text-tertiary); }
+    .url-status.err { color: var(--danger); }
+
+    /* Modal footer */
+    .modal-footer {
+      padding: 16px 24px 24px;
+      display: flex; gap: 10px; justify-content: flex-end;
+      flex-shrink: 0; border-top: 1px solid var(--border);
+    }
+    .btn-cancel {
+      height: 40px; padding: 0 20px; border-radius: var(--radius-btn);
+      border: 1px solid var(--border); background: transparent;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-cancel:hover { background: var(--bg); color: var(--text-primary); }
+    .btn-save {
+      height: 40px; padding: 0 24px; border-radius: var(--radius-btn);
+      border: none; background: var(--accent); color: white;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background var(--transition), transform var(--transition);
+    }
+    .btn-save:hover { background: var(--accent-hover); }
+    .btn-save:active { transform: scale(0.97); }
+    .btn-del-tool {
+      height: 40px; padding: 0 20px; border-radius: var(--radius-btn);
+      border: 1px solid var(--danger-soft); background: var(--danger-soft);
+      color: var(--danger); font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; margin-right: auto;
+      transition: background var(--transition);
+    }
+    .btn-del-tool:hover { background: rgba(255,59,48,0.14); }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .confirm-overlay.open { opacity: 1; pointer-events: all; }
+    .confirm-box {
+      background: var(--surface); border-radius: 20px;
+      padding: 28px; max-width: 340px; width: 90%;
+      text-align: center; box-shadow: var(--shadow-modal);
+      transform: scale(0.9); transition: transform 0.2s;
+    }
+    .confirm-overlay.open .confirm-box { transform: scale(1); }
+    .confirm-icon { font-size: 40px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .confirm-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .confirm-cancel {
+      flex: 1; height: 40px; border-radius: var(--radius-btn);
+      border: 1px solid var(--border); background: transparent;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+    }
+    .confirm-ok {
+      flex: 1; height: 40px; border-radius: var(--radius-btn);
+      border: none; background: var(--danger); color: white;
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 48px 20px 32px; }
+      .grid { padding: 0 16px 60px; gap: 12px; }
+      .controls { padding: 0 16px; }
+      .form-row-2 { grid-template-columns: 1fr; }
+      .modal { border-radius: 20px 20px 0 0; max-height: 96vh; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo"><svg width="24" height="24" viewBox="0 0 16 16" fill="white"><path d="M8 1l2.5 5H14l-4 3.5L11.5 15 8 12 4.5 15 6 9.5 2 6h3.5z"/></svg></div>
+    <h2 class="auth-title">工具金库</h2>
+    <p class="auth-desc">请输入 6 位访客 PIN 码</p>
+    <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="••••••" autofocus />
+    <button class="auth-btn" onclick="checkPin()">验证并进入</button>
+    <div class="auth-err" id="authErr"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="logo-icon">
+      <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 1l2.5 5H14l-4 3.5L11.5 15 8 12 4.5 15 6 9.5 2 6h3.5z"/></svg>
+    </div>
+    ToolVault
+  </div>
+  <div class="nav-right">
+    <span class="nav-count" id="navCount"></span>
+    <button class="btn-add" id="btnAdd" onclick="openModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      添加工具
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">我的付费工具库</p>
+  <h1 class="hero-title">ToolVault</h1>
+  <p class="hero-sub">所有付费工具、账号密码，一个地方管理，一键直达。</p>
+</section>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="搜索工具…" />
+  </div>
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="ai">AI 对话</button>
+    <button class="filter-btn" data-filter="image">AI 绘图</button>
+    <button class="filter-btn" data-filter="video">视频剪辑</button>
+    <button class="filter-btn" data-filter="design">设计</button>
+    <button class="filter-btn" data-filter="search">搜索</button>
+    <button class="filter-btn" data-filter="other">其他</button>
+  </div>
+</div>
+
+<!-- GRID -->
+<div class="grid" id="grid"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════ ADD / EDIT MODAL ══════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">添加工具</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Favicon 预览 -->
+      <div class="favicon-preview-row">
+        <div class="favicon-preview-fallback" id="faviconFallback">🌐</div>
+        <img class="favicon-preview" id="faviconPreview" src="" alt="" style="display:none;"
+          onerror="this.style.display='none';document.getElementById('faviconFallback').style.display='flex';" />
+        <div>
+          <div class="favicon-hint"><strong>图标自动抓取</strong><br>填写网站链接后自动获取图标，也可手动粘贴图标 URL。</div>
+          <div class="url-status" id="urlStatus"></div>
+        </div>
+      </div>
+
+      <!-- 名称 + Emoji -->
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">工具名称 *</label>
+          <input class="form-input" id="fName" placeholder="ChatGPT" maxlength="30" />
+        </div>
+        <div class="form-row">
+          <label class="form-label">Emoji 图标（备用）</label>
+          <input class="form-input" id="fEmoji" placeholder="🤖" maxlength="4" />
+        </div>
+      </div>
+
+      <!-- URL -->
+      <div class="form-row">
+        <label class="form-label">网站链接</label>
+        <input class="form-input" id="fUrl" type="url" placeholder="https://example.com" />
+      </div>
+
+      <!-- 自定义图标 URL -->
+      <div class="form-row">
+        <label class="form-label">自定义图标 URL（留空自动抓取）</label>
+        <input class="form-input" id="fFavicon" type="url" placeholder="自动从链接获取，可手动覆盖" />
+      </div>
+
+      <!-- 简介 -->
+      <div class="form-row">
+        <label class="form-label">简介</label>
+        <textarea class="form-textarea" id="fDesc" placeholder="这个工具的用途…" rows="2"></textarea>
+      </div>
+
+      <!-- 标签 -->
+      <div class="form-row">
+        <label class="form-label">分类标签（可多选）</label>
+        <div class="tag-selector" id="tagSelector">
+          <button class="tag-chip" data-tag="ai">AI 对话</button>
+          <button class="tag-chip" data-tag="image">AI 绘图</button>
+          <button class="tag-chip" data-tag="video">视频剪辑</button>
+          <button class="tag-chip" data-tag="design">设计</button>
+          <button class="tag-chip" data-tag="search">搜索</button>
+          <button class="tag-chip" data-tag="other">其他</button>
+        </div>
+      </div>
+
+      <!-- 账号 + 密码 -->
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">登录账号</label>
+          <input class="form-input" id="fAccount" placeholder="邮箱或账号" />
+        </div>
+        <div class="form-row">
+          <label class="form-label">密码</label>
+          <div class="pwd-wrap">
+            <input class="form-input" id="fPassword" type="password" placeholder="••••••••" />
+            <button class="pwd-toggle" type="button" id="formPwdToggle" onclick="toggleFormPwd()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="pwdIcon">
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 備注 + 到期日 + 状态 -->
+      <div class="form-row">
+        <label class="form-label">备注</label>
+        <input class="form-input" id="fNote" placeholder="例：谷歌账号登录" />
+      </div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">到期日期</label>
+          <input class="form-input" id="fExpiry" type="date" />
+        </div>
+        <div class="form-row">
+          <label class="form-label">状态</label>
+          <select class="form-select form-input" id="fStatus">
+            <option value="active">✅ 有效</option>
+            <option value="warning">⚠️ 即将到期</option>
+            <option value="expired">❌ 已过期</option>
+          </select>
+        </div>
+      </div>
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer">
+      <button class="btn-del-tool" id="btnDeleteTool" style="display:none;" onclick="confirmDelete()">删除工具</button>
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveTool()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">确定要删除吗？</div>
+    <div class="confirm-desc" id="confirmDesc">此操作不可撤销。</div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">取消</button>
+      <button class="confirm-ok" id="confirmOk">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  默认数据
+// ═══════════════════════════════════════════
+const DEFAULT_TOOLS = [
+  {
+    id: 1, name: "即梦 AI", desc: "字节跳动出品，AI 视频与图像生成",
+    url: "https://jimeng.jianying.com/",
+    favicon: "https://www.google.com/s2/favicons?domain=jianying.com&sz=64",
+    emoji: "🎬", tags: ["video","ai"], account: "包月小微销售账号",
+    password: "", note: "", status: "active", expiry: "",
+  },
+  {
+    id: 2, name: "ChatGPT", desc: "OpenAI 旗舰对话模型，付费会员",
+    url: "https://chatgpt.com/",
+    favicon: "https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64",
+    emoji: "🤖", tags: ["ai"], account: "yilongfun118@gmail.com",
+    password: "Polo_761203", note: "谷歌邮箱绑定登录", status: "active", expiry: "",
+  },
+  {
+    id: 3, name: "LOVART", desc: "AI 设计生成工具，独享会员",
+    url: "https://www.lovart.ai/",
+    favicon: "https://www.google.com/s2/favicons?domain=lovart.ai&sz=64",
+    emoji: "🎨", tags: ["design","ai"], account: "sarah.hintrintric@gmail.com",
+    password: "Sara_761209", note: "谷歌账号登录", status: "active", expiry: "",
+  },
+  {
+    id: 4, name: "Perplexity", desc: "AI 搜索引擎，半年会员",
+    url: "https://www.perplexity.ai/",
+    favicon: "https://www.google.com/s2/favicons?domain=perplexity.ai&sz=64",
+    emoji: "🔍", tags: ["search","ai"], account: "yilongfun118@gmail.com",
+    password: "Polo_761203", note: "谷歌登录购买", status: "active", expiry: "",
+  },
+  {
+    id: 5, name: "剪映专业版", desc: "字节跳动专业视频剪辑，年度 SVP",
+    url: "https://www.capcut.cn/",
+    favicon: "https://www.google.com/s2/favicons?domain=capcut.cn&sz=64",
+    emoji: "✂️", tags: ["video"], account: "Polo_761203",
+    password: "", note: "PC 端差别登录，年度 SVP", status: "active", expiry: "",
+  },
+  {
+    id: 6, name: "Midjourney", desc: "业界顶级 AI 绘图，付费订阅",
+    url: "https://www.midjourney.com/",
+    favicon: "https://www.google.com/s2/favicons?domain=midjourney.com&sz=64",
+    emoji: "🖼️", tags: ["image","ai"], account: "yilongfun1188@gmail.com",
+    password: "Polo_761203", note: "续费走官方渠道", status: "warning", expiry: "2026-08-27",
+  },
+];
+
+// ═══════════════════════════════════════════
+//  数据层（localStorage 持久化）
+// ═══════════════════════════════════════════
+const STORE_KEY = "toolVault_v1";
+
+function loadTools() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_TOOLS)); // 深拷贝默认数据
+}
+
+function saveTools() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(TOOLS));
+}
+
+let TOOLS = loadTools();
+let nextId = TOOLS.reduce((m, t) => Math.max(m, t.id), 0) + 1;
+
+// ─────────────────────────────────────────────
+//  配置中心：在这里修改你的 PIN 码
+// ─────────────────────────────────────────────
+const VAULT_CONFIG = {
+  MASTER_PIN: "123456", // <--- 修改你的密码 (6位)
+  SESSION_DAYS: 7,      // 免登天数
+};
+
+function checkPin() {
+  const pin = document.getElementById("pinInput").value;
+  const err = document.getElementById("authErr");
+  if (pin === VAULT_CONFIG.MASTER_PIN) {
+    const expiry = new Date().getTime() + (VAULT_CONFIG.SESSION_DAYS * 86400000);
+    localStorage.setItem("vault_auth", expiry);
+    document.getElementById("authOverlay").classList.add("hidden");
+    showToast("欢迎回来 ✓");
+  } else {
+    err.textContent = "密码错误，请重新输入";
+    document.getElementById("pinInput").value = "";
+    document.getElementById("pinInput").focus();
+  }
+}
+
+// 自动验证逻辑
+(function autoAuth() {
+  const auth = localStorage.getItem("vault_auth");
+  if (auth && new Date().getTime() < parseInt(auth)) {
+    // 异步执行隐藏，防止阻塞首屏渲染
+    window.addEventListener('scroll', () => {}, {passive: true});
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("authOverlay").classList.add("hidden");
+    });
+  }
+})();
+
+// 监听回车
+document.getElementById("pinInput")?.addEventListener("keydown", e => {
+  if (e.key === "Enter") checkPin();
+});
+
+// ─────────────────────────────────────────────
+//  数据层：在这里维护你的工具列表
+// ─────────────────────────────────────────────
+const TAG_LABELS = { ai:"AI 对话", image:"AI 绘图", video:"视频剪辑", design:"设计", search:"搜索", other:"其他" };
+const TAG_CLASS  = { ai:"tag-ai", image:"tag-image", video:"tag-video", design:"tag-design", search:"tag-search", other:"tag-other" };
+
+function daysUntil(d) {
+  if (!d) return null;
+  return Math.ceil((new Date(d) - new Date()) / 86400000);
+}
+
+// ═══════════════════════════════════════════
+//  渲染
+// ═══════════════════════════════════════════
+let currentFilter = "all";
+let currentSearch = "";
+
+const COPY_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+const EYE_SVG  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYEOFF   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>`;
+const EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
+const DEL_SVG  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+const LINK_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>`;
+
+function renderCard(tool) {
+  const days = daysUntil(tool.expiry);
+  const expiryHtml = tool.expiry
+    ? `<p class="expiry-note ${days < 60 ? 'soon' : ''}">到期：${tool.expiry}（剩 ${days} 天）</p>`
+    : "";
+
+  const tagsHtml = (tool.tags || []).map(t =>
+    `<span class="tag ${TAG_CLASS[t] || 'tag-other'}">${TAG_LABELS[t] || t}</span>`
+  ).join("");
+
+  const safeAcc = (tool.account || "").replace(/'/g, "&#39;");
+  const safePwd = (tool.password || "").replace(/'/g, "&#39;");
+
+  const credAccount = tool.account
+    ? `<div class="cred-row">
+        <span class="cred-label">账号</span>
+        <span class="cred-value" title="${safeAcc}">${tool.account}</span>
+        <div class="cred-actions">
+          <button class="icon-btn" onclick="copyText('${safeAcc}',this)" title="复制">${COPY_SVG}</button>
+        </div>
+      </div>` : "";
+
+  const credPwd = tool.password
+    ? `<div class="cred-row">
+        <span class="cred-label">密码</span>
+        <span class="cred-value masked" id="pv${tool.id}">••••••••</span>
+        <div class="cred-actions">
+          <button class="icon-btn" id="pe${tool.id}" onclick="togglePwd(${tool.id},'${safePwd}')" title="显示/隐藏">${EYE_SVG}</button>
+          <button class="icon-btn" onclick="copyText('${safePwd}',this)" title="复制密码">${COPY_SVG}</button>
+        </div>
+      </div>` : "";
+
+  const openBtn = tool.url
+    ? `<a class="open-btn" href="${tool.url}" target="_blank" rel="noopener">${LINK_SVG} 打开网站</a>`
+    : `<button class="open-btn no-url">暂无链接</button>`;
+
+  const iconHtml = tool.favicon
+    ? `<img class="card-icon" src="${tool.favicon}" alt="${tool.name}"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+       <div class="card-icon-fallback" style="display:none;">${tool.emoji || '🌐'}</div>`
+    : `<div class="card-icon-fallback">${tool.emoji || '🌐'}</div>`;
+
+  return `
+    <div class="card" data-tags="${(tool.tags||[]).join(',')}" data-name="${tool.name.toLowerCase()}">
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="openModal(${tool.id})" title="编辑">${EDIT_SVG}</button>
+        <button class="card-action-btn del" onclick="quickDelete(${tool.id})" title="删除">${DEL_SVG}</button>
+      </div>
+      <div class="card-head">
+        ${iconHtml}
+        <div class="card-meta">
+          <div class="card-name">
+            ${tool.name}
+            <span class="status-dot status-${tool.status || 'active'}" title="${tool.status}"></span>
+          </div>
+          <div class="card-desc">${tool.desc || ''}</div>
+        </div>
+      </div>
+      ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ''}
+      <div class="creds">
+        ${credAccount}
+        ${credPwd}
+        ${tool.note ? `<p class="expiry-note">${tool.note}</p>` : ''}
+        ${expiryHtml}
+      </div>
+      <div class="card-footer">${openBtn}</div>
+    </div>`;
+}
+
+function render() {
+  const grid = document.getElementById("grid");
+  const s = currentSearch.toLowerCase();
+  const filtered = TOOLS.filter(t => {
+    const tagOk = currentFilter === "all" || (t.tags || []).includes(currentFilter);
+    const searchOk = !s || t.name.toLowerCase().includes(s) || (t.desc||"").toLowerCase().includes(s);
+    return tagOk && searchOk;
+  });
+
+  grid.innerHTML = filtered.length
+    ? filtered.map(renderCard).join("")
+    : `<div class="empty"><div class="empty-icon">🔍</div><h3>没有找到匹配的工具</h3><p>换个关键词试试？</p></div>`;
+
+  document.getElementById("navCount").textContent = `${TOOLS.length} 个工具`;
+}
+
+// ═══════════════════════════════════════════
+//  密码显示/隐藏
+// ═══════════════════════════════════════════
+const pwdOpen = {};
+function togglePwd(id, pwd) {
+  const val = document.getElementById(`pv${id}`);
+  const btn = document.getElementById(`pe${id}`);
+  pwdOpen[id] = !pwdOpen[id];
+  if (pwdOpen[id]) {
+    val.textContent = pwd; val.classList.remove("masked");
+    btn.innerHTML = EYEOFF;
+  } else {
+    val.textContent = "••••••••"; val.classList.add("masked");
+    btn.innerHTML = EYE_SVG;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  Toast & Copy
+// ═══════════════════════════════════════════
+let _tt;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove("show"), 2000);
+}
+function copyText(text, btn) {
+  (navigator.clipboard?.writeText(text) || Promise.reject()).then(() => {
+    showToast("已复制 ✓");
+    btn.classList.add("copied");
+    setTimeout(() => btn.classList.remove("copied"), 1500);
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    showToast("已复制 ✓");
+  });
+}
+
+// ═══════════════════════════════════════════
+//  过滤 & 搜索
+// ═══════════════════════════════════════════
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest(".filter-btn");
+  if (!btn) return;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentFilter = btn.dataset.filter;
+  render();
+});
+document.getElementById("searchInput").addEventListener("input", e => {
+  currentSearch = e.target.value; render();
+});
+
+// ═══════════════════════════════════════════
+//  MODAL：打开 / 关闭
+// ═══════════════════════════════════════════
+let editingId = null;
+
+function openModal(id) {
+  editingId = id || null;
+  resetForm();
+
+  if (id) {
+    // 编辑模式
+    const t = TOOLS.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById("modalTitle").textContent = "编辑工具";
+    document.getElementById("btnDeleteTool").style.display = "block";
+    document.getElementById("fName").value    = t.name || "";
+    document.getElementById("fEmoji").value   = t.emoji || "";
+    document.getElementById("fUrl").value     = t.url || "";
+    document.getElementById("fFavicon").value = t.favicon || "";
+    document.getElementById("fDesc").value    = t.desc || "";
+    document.getElementById("fAccount").value = t.account || "";
+    document.getElementById("fPassword").value= t.password || "";
+    document.getElementById("fNote").value    = t.note || "";
+    document.getElementById("fExpiry").value  = t.expiry || "";
+    document.getElementById("fStatus").value  = t.status || "active";
+    // 标签 chips
+    (t.tags || []).forEach(tag => {
+      const chip = document.querySelector(`.tag-chip[data-tag="${tag}"]`);
+      if (chip) chip.classList.add("selected");
+    });
+    // Favicon 预览
+    updateFaviconPreview(t.favicon);
+  } else {
+    document.getElementById("modalTitle").textContent = "添加工具";
+    document.getElementById("btnDeleteTool").style.display = "none";
+  }
+
+  document.getElementById("modalOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  setTimeout(() => document.getElementById("fName").focus(), 250);
+}
+
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById("modalOverlay")) closeModal();
+}
+
+function resetForm() {
+  ["fName","fEmoji","fUrl","fFavicon","fDesc","fAccount","fPassword","fNote","fExpiry"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("fStatus").value = "active";
+  document.getElementById("urlStatus").textContent = "";
+  document.querySelectorAll(".tag-chip").forEach(c => c.classList.remove("selected"));
+  updateFaviconPreview("");
+  // 重置密码可见
+  const pwd = document.getElementById("fPassword");
+  pwd.type = "password";
+  document.getElementById("pwdIcon").outerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="pwdIcon"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+// ═══════════════════════════════════════════
+//  Favicon 自动抓取
+// ═══════════════════════════════════════════
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch(e) { return ""; }
+}
+function faviconUrl(domain) {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+}
+function updateFaviconPreview(src) {
+  const img = document.getElementById("faviconPreview");
+  const fallback = document.getElementById("faviconFallback");
+  if (src) {
+    img.src = src;
+    img.style.display = "block";
+    fallback.style.display = "none";
+  } else {
+    img.style.display = "none";
+    fallback.style.display = "flex";
+  }
+}
+
+let faviconDebounce;
+document.getElementById("fUrl").addEventListener("blur", () => {
+  const url = document.getElementById("fUrl").value.trim();
+  const customFavicon = document.getElementById("fFavicon").value.trim();
+  if (!url || customFavicon) return;
+  const domain = getDomain(url);
+  if (!domain) return;
+  const status = document.getElementById("urlStatus");
+  status.className = "url-status loading"; status.textContent = "正在获取图标…";
+  const src = faviconUrl(domain);
+  const testImg = new Image();
+  testImg.onload = () => {
+    updateFaviconPreview(src);
+    document.getElementById("fFavicon").value = src;
+    status.className = "url-status ok"; status.textContent = "✓ 图标已自动获取";
+  };
+  testImg.onerror = () => {
+    status.className = "url-status err"; status.textContent = "未找到图标，可手动填写图标 URL";
+  };
+  testImg.src = src;
+});
+
+document.getElementById("fFavicon").addEventListener("input", () => {
+  const v = document.getElementById("fFavicon").value.trim();
+  if (v) updateFaviconPreview(v);
+});
+
+// ═══════════════════════════════════════════
+//  Tag chips
+// ═══════════════════════════════════════════
+document.getElementById("tagSelector").addEventListener("click", e => {
+  const chip = e.target.closest(".tag-chip");
+  if (!chip) return;
+  chip.classList.toggle("selected");
+});
+
+// ═══════════════════════════════════════════
+//  密码 toggle（表单内）
+// ═══════════════════════════════════════════
+let formPwdVisible = false;
+function toggleFormPwd() {
+  formPwdVisible = !formPwdVisible;
+  const pwd = document.getElementById("fPassword");
+  pwd.type = formPwdVisible ? "text" : "password";
+  document.getElementById("pwdIcon").outerHTML = formPwdVisible
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="pwdIcon"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>`
+    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="pwdIcon"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+// ═══════════════════════════════════════════
+//  保存
+// ═══════════════════════════════════════════
+function saveTool() {
+  const name = document.getElementById("fName").value.trim();
+  if (!name) { showToast("请填写工具名称"); document.getElementById("fName").focus(); return; }
+
+  const selectedTags = [...document.querySelectorAll(".tag-chip.selected")].map(c => c.dataset.tag);
+  const favicon = document.getElementById("fFavicon").value.trim();
+  const url = document.getElementById("fUrl").value.trim();
+  const domain = getDomain(url);
+
+  const toolData = {
+    name,
+    emoji: document.getElementById("fEmoji").value.trim() || "🌐",
+    url,
+    favicon: favicon || (domain ? faviconUrl(domain) : ""),
+    desc: document.getElementById("fDesc").value.trim(),
+    tags: selectedTags.length ? selectedTags : ["other"],
+    account: document.getElementById("fAccount").value.trim(),
+    password: document.getElementById("fPassword").value.trim(),
+    note: document.getElementById("fNote").value.trim(),
+    expiry: document.getElementById("fExpiry").value,
+    status: document.getElementById("fStatus").value,
+  };
+
+  if (editingId) {
+    const idx = TOOLS.findIndex(t => t.id === editingId);
+    if (idx !== -1) TOOLS[idx] = { ...TOOLS[idx], ...toolData };
+    showToast("已保存 ✓");
+  } else {
+    TOOLS.push({ id: nextId++, ...toolData });
+    showToast("工具已添加 ✓");
+  }
+
+  saveTools();
+  render();
+  closeModal();
+}
+
+// ═══════════════════════════════════════════
+//  删除
+// ═══════════════════════════════════════════
+let pendingDeleteId = null;
+
+function confirmDelete() {
+  pendingDeleteId = editingId;
+  const t = TOOLS.find(x => x.id === editingId);
+  document.getElementById("confirmDesc").textContent = `「${t?.name}」将被永久删除，不可恢复。`;
+  document.getElementById("confirmOverlay").classList.add("open");
+}
+
+function quickDelete(id) {
+  pendingDeleteId = id;
+  const t = TOOLS.find(x => x.id === id);
+  document.getElementById("confirmDesc").textContent = `「${t?.name}」将被永久删除，不可恢复。`;
+  document.getElementById("confirmOverlay").classList.add("open");
+}
+
+function closeConfirm() {
+  document.getElementById("confirmOverlay").classList.remove("open");
+  pendingDeleteId = null;
+}
+
+document.getElementById("confirmOk").addEventListener("click", () => {
+  if (pendingDeleteId !== null) {
+    TOOLS = TOOLS.filter(t => t.id !== pendingDeleteId);
+    saveTools(); render(); closeConfirm(); closeModal();
+    showToast("已删除");
+  }
+});
+
+// ═══════════════════════════════════════════
+//  键盘快捷键
+// ═══════════════════════════════════════════
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(); closeConfirm(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    e.preventDefault();
+    document.getElementById("searchInput").focus();
+  }
+});
+
+// ═══════════════════════════════════════════
+//  初始化
+// ═══════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
